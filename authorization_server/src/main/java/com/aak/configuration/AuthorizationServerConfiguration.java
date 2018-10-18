@@ -1,6 +1,5 @@
 package com.aak.configuration;
 
-import java.security.KeyPair;
 import java.util.Collections;
 import java.util.Map;
 
@@ -11,8 +10,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.core.userdetails.UserDetailsByNameServiceWrapper;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
@@ -31,7 +33,8 @@ import org.springframework.security.oauth2.provider.token.DefaultTokenServices;
 import org.springframework.security.oauth2.provider.token.TokenStore;
 import org.springframework.security.oauth2.provider.token.store.JdbcTokenStore;
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
-import org.springframework.security.oauth2.provider.token.store.KeyStoreKeyFactory;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationProvider;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
 /**
  * Created by ahmed on 21.5.18.
@@ -43,6 +46,9 @@ public class AuthorizationServerConfiguration extends AuthorizationServerConfigu
 	//for password grant needed
 	@Autowired
     private AuthenticationManager authenticationManager;
+	
+	@Autowired
+	private UserDetailsService userDetailsService;
 	
     @Bean
     @ConfigurationProperties(prefix = "spring.datasource")
@@ -72,14 +78,22 @@ public class AuthorizationServerConfiguration extends AuthorizationServerConfigu
 	public AuthorizationServerTokenServices tokenServices() {
 		DefaultTokenServices defaultTokenServices = new DefaultTokenServices();
 		defaultTokenServices.setTokenStore(tokenStore());
+		defaultTokenServices.setSupportRefreshToken(true);
 		// client detail service to get below setting, no need of global setting here
-//		defaultTokenServices.setSupportRefreshToken(true);
 //		defaultTokenServices.setAccessTokenValiditySeconds(accessTokenValiditySeconds);
 //		defaultTokenServices.setRefreshTokenValiditySeconds(refreshTokenValiditySeconds);
 		defaultTokenServices.setReuseRefreshToken(true);
 		defaultTokenServices.setTokenEnhancer(JasonWebTokenConverter());
 		defaultTokenServices.setClientDetailsService(clientDetailsService());
-		defaultTokenServices.setAuthenticationManager(authenticationManager);
+		if(userDetailsService != null) {
+			//For refresh token endpoint, otherwise throw PreAuthenticatedAuthenticationProvider not found exception
+			PreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider = new PreAuthenticatedAuthenticationProvider();
+			preAuthenticatedAuthenticationProvider.setPreAuthenticatedUserDetailsService(new UserDetailsByNameServiceWrapper<PreAuthenticatedAuthenticationToken>(userDetailsService));
+			defaultTokenServices.setAuthenticationManager(new ProviderManager(Collections.<AuthenticationProvider>singletonList(preAuthenticatedAuthenticationProvider), authenticationManager));
+		}else {
+			defaultTokenServices.setAuthenticationManager(authenticationManager);
+		}
+		
 		return defaultTokenServices;
 	}
     

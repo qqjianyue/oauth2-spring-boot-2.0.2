@@ -22,7 +22,7 @@ spring:
           enabled: true
 # --- server
 server:
-  port: 8081
+  port: 9080
 
 
 
