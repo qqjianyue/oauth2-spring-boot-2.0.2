@@ -1,5 +1,7 @@
 OAuth2 Server demo back by Spring Boot2, Spring Security and H2 DB
 
+https://medium.com/@akourtim.ahmed/oauth-2-centralized-authorization-with-spring-boot-2-0-2-and-spring-security-5-and-jdbc-token-store-8dbc063bd5d4
+
 Not high performance production level ready, but a very good starter to learn and start production level customization
 
 
