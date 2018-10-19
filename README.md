@@ -6,6 +6,7 @@ Not high performance production level ready, but a very good starter to learn an
 
 
 Start authorization_server and test different grant types by browser and curl command
+If web page logon need, please logon with account(oauth_admin) and password(user)
 
 1. authorization_code flow
 Browser GET request to get a authorization_code:
